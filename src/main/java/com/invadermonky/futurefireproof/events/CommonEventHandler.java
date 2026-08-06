@@ -1,6 +1,5 @@
 package com.invadermonky.futurefireproof.events;
 
-import com.invadermonky.futurefireproof.FutureFireproof;
 import com.invadermonky.futurefireproof.entity.EntityFireproofItem;
 import com.invadermonky.futurefireproof.entity.EntityFireproofItemLootHandler;
 import com.invadermonky.futurefireproof.registry.RegistrarFF;
@@ -12,7 +11,7 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-@Mod.EventBusSubscriber(modid = FutureFireproof.MOD_ID)
+@Mod.EventBusSubscriber(modid = "futurefireproof")
 public class CommonEventHandler {
     @SubscribeEvent
     public static void onEntityJoinWorld(EntityJoinWorldEvent event) {
