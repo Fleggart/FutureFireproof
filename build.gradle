@@ -69,12 +69,6 @@ repositories {
 
 dependencies {
 
-    if(project.hasProperty('realistic_item_drops') && (project.property('realistic_item_drops') as boolean)) {
-        implementation rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
-    } else {
-        compileOnly rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
-    }
-
     if (project.hasProperty('use_asset_mover') && (project.property('use_asset_mover') as boolean)) {
         implementation "com.cleanroommc:assetmover:${project.property('asset_mover_version')}"
     }
