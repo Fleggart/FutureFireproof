@@ -1,6 +1,5 @@
 package com.invadermonky.futurefireproof.enchants;
 
-import com.invadermonky.futurefireproof.FutureFireproof;
 import com.invadermonky.futurefireproof.api.IFireproofItem;
 import com.invadermonky.futurefireproof.config.ConfigHandlerFF;
 import net.minecraft.enchantment.Enchantment;
@@ -13,7 +12,7 @@ public class EnchantmentFireproof extends Enchantment {
 
     public EnchantmentFireproof() {
         super(Rarity.COMMON, EnumEnchantmentType.ALL, EntityEquipmentSlot.values());
-        this.setRegistryName(FutureFireproof.MOD_ID, NAME);
+        this.setRegistryName("futurefireproof", NAME);
         this.setName(NAME);
     }
 
