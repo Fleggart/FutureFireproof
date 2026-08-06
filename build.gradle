@@ -14,7 +14,50 @@ plugins {
     id 'org.jetbrains.changelog' version '2.2.0'
 }
 
-apply from: 'gradle/scripts/helpers.gradle'
+// ====== 内联 helpers.gradle 功能 ======
+
+// 属性断言辅助方法
+def assertProperty(String key) {
+    if (!project.hasProperty(key) || project.property(key).toString().isEmpty()) {
+        throw new GradleException("Property '$key' is not defined or empty in gradle.properties!")
+    }
+}
+
+def assertSubProperties(String key, String... subKeys) {
+    if (project.hasProperty(key) && project.property(key).toString().toBoolean()) {
+        for (def subKey : subKeys) {
+            assertProperty(subKey)
+        }
+    }
+}
+
+def setDefaultProperty(String key, boolean condition, def defaultValue) {
+    if (condition && (!project.hasProperty(key) || project.property(key).toString().isEmpty())) {
+        project.ext.set(key, defaultValue)
+    }
+}
+
+def propertyString(String key) {
+    return project.hasProperty(key) ? project.property(key).toString() : ''
+}
+
+def propertyStringList(String key, String delimiter = ' ') {
+    if (!project.hasProperty(key)) return []
+    def value = project.property(key).toString()
+    return value.isEmpty() ? [] : value.split(delimiter).collect { it.trim() }.findAll { !it.isEmpty() }
+}
+
+def propertyBool(String key) {
+    return project.hasProperty(key) && project.property(key).toString().toBoolean()
+}
+
+def interpolate(String value) {
+    return value.replaceAll(/\$\{([^}]+)\}/) { match, key ->
+        project.hasProperty(key) ? project.property(key).toString() : match
+    }
+}
+
+// ====== 原始 build.gradle 内容（移除 apply from 后） ======
 
 // Early Assertions
 assertProperty 'mod_version'
@@ -138,7 +181,8 @@ dependencies {
     }
 }
 
-apply from: 'gradle/scripts/dependencies.gradle'
+// 移除: apply from: 'gradle/scripts/dependencies.gradle'
+// 改为直接 apply dependencies.gradle 的内容（见下方）
 
 // Access Transformer
 if (propertyBool('use_access_transformer')) {
@@ -331,6 +375,43 @@ idea.project.settings {
     }
 }
 
-// Publishing 相关已移除
-// apply from: 'gradle/scripts/publishing.gradle'
-apply from: 'gradle/scripts/extra.gradle'
+// 移除: apply from: 'gradle/scripts/publishing.gradle'
+// 移除: apply from: 'gradle/scripts/extra.gradle'
+
+// ====== dependencies.gradle 内容内联 ======
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name 'CurseMaven'
+                url 'https://cursemaven.com'
+            }
+        }
+        filter {
+            includeGroup 'curse.maven'
+        }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name 'Modrinth'
+                url 'https://api.modrinth.com/maven'
+            }
+        }
+        filter {
+            includeGroup 'maven.modrinth'
+        }
+    }
+    mavenLocal()
+}
+
+dependencies {
+    implementation rfg.deobf('curse.maven:had-enough-items-557549:4543375')
+
+    if(propertyBool("realistic_item_drops")) {
+        implementation rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
+    } else {
+        compileOnly rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
+    }
+}
