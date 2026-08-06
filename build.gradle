@@ -26,12 +26,11 @@ base {
     archivesName.set(modId)
 }
 
-// 兼容 Gradle 9.2.1 - 使用字符串而不是枚举
+// 兼容 Gradle 9.2.1
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(8))
-        // 移除 vendor 设置，避免 JvmVendorSpec.IBM_SEMERU 问题
-        // vendor.set(JvmVendorSpec.AZUL)
+        // 移除 vendor 设置
     }
     if (!project.hasProperty('generate_sources_jar') || (project.property('generate_sources_jar') as boolean)) {
         withSourcesJar()
@@ -90,14 +89,15 @@ repositories {
 
 dependencies {
     if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
+        // 修复：使用字符串格式的依赖声明
         annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
         annotationProcessor 'net.java.dev.jna:jna-platform:5.13.0'
-        compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0' {
+        compileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
             transitive = false
         }
         patchedMinecraft 'me.eigenraven.java8unsupported:java-8-unsupported-shim:1.0.0'
         testAnnotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
-        testCompileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0' {
+        testCompileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
             transitive = false
         }
     }
@@ -124,10 +124,9 @@ dependencies {
 
 apply from: 'gradle/scripts/dependencies.gradle'
 
-// Access Transformer - 修复路径问题
+// Access Transformer
 if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
     def atLocations = project.hasProperty('access_transformer_locations') ? (project.property('access_transformer_locations') as String) : "${modId}_at.cfg"
-    // 替换 ${mod_id} 变量
     atLocations = atLocations.replace('${mod_id}', modId)
     
     def locations = atLocations.split(' ').findAll { !it.isEmpty() }
@@ -137,9 +136,7 @@ if (project.hasProperty('use_access_transformer') && (project.property('use_acce
             tasks.deobfuscateMergedJarToSrg.accessTransformerFiles.from(fileLocation)
             tasks.srgifyBinpatchedJar.accessTransformerFiles.from(fileLocation)
         } else {
-            // 如果文件不存在，给出警告而不是失败（因为可能不需要 AT）
             logger.warn("Access Transformer file [$fileLocation] does not exist, skipping...")
-            // throw new GradleException("Access Transformer file [$fileLocation] does not exist!")
         }
     }
 }
@@ -286,8 +283,6 @@ tasks.withType(JavaCompile).configureEach {
         options.release.set(8)
         javaCompiler.set(javaToolchains.compilerFor {
             languageVersion.set(JavaLanguageVersion.of(16))
-            // 移除 vendor 设置
-            // vendor.set(JvmVendorSpec.AZUL)
         })
     }
 }
@@ -330,7 +325,3 @@ idea.project.settings {
         afterSync 'cleanroomAfterSync'
     }
 }
-
-// Publishing 相关已移除
-// apply from: 'gradle/scripts/publishing.gradle'
-apply from: 'gradle/scripts/extra.gradle'
