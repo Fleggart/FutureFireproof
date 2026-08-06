@@ -225,10 +225,6 @@ tasks.register('generateMixinJson') {
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-}
-
 tasks.register('cleanroomAfterSync') {
     group 'cleanroom helpers'
     dependsOn 'generateMixinJson'
