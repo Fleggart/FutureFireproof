@@ -26,7 +26,6 @@ base {
     archivesName.set(modId)
 }
 
-// 移除 toolchain，直接使用 source/target compatibility
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -34,10 +33,6 @@ java {
     if (!project.hasProperty('generate_sources_jar') || (project.property('generate_sources_jar') as boolean)) {
         withSourcesJar()
     }
-    // 完全移除 Javadoc Jar
-    // if (project.hasProperty('generate_javadocs_jar') && (project.property('generate_javadocs_jar') as boolean)) {
-    //     withJavadocJar()
-    // }
 }
 
 configurations {
@@ -70,7 +65,6 @@ minecraft {
         extraRunJvmArguments.addAll((project.property('extra_jvm_args') as String).split(' '))
     }
 
-    // 禁用 tags 生成，因为 Tags 类已在源代码中定义
     if (project.hasProperty('use_tags') && (project.property('use_tags') as boolean)) {
         if (file('tags.properties').exists()) {
             Properties props = new Properties().tap { it.load(file('tags.properties').newInputStream()); it }
@@ -120,18 +114,20 @@ dependencies {
         compileOnly rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
     }
 
-    if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
-        annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
-        annotationProcessor 'net.java.dev.jna:jna-platform:5.13.0'
-        compileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
-            transitive = false
-        }
-        patchedMinecraft 'me.eigenraven.java8unsupported:java-8-unsupported-shim:1.0.0'
-        testAnnotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
-        testCompileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
-            transitive = false
-        }
-    }
+    // 完全移除 Jabel 相关依赖，因为 use_modern_java_syntax = false
+    // if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
+    //     annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
+    //     annotationProcessor 'net.java.dev.jna:jna-platform:5.13.0'
+    //     compileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
+    //         transitive = false
+    //     }
+    //     patchedMinecraft 'me.eigenraven.java8unsupported:java-8-unsupported-shim:1.0.0'
+    //     testAnnotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
+    //     testCompileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
+    //         transitive = false
+    //     }
+    // }
+    
     if (project.hasProperty('use_asset_mover') && (project.property('use_asset_mover') as boolean)) {
         implementation "com.cleanroommc:assetmover:${project.property('asset_mover_version')}"
     }
@@ -302,37 +298,27 @@ tasks.register('generateMixinJson') {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
-        if (it.name in ['compileMcLauncherJava', 'compilePatchedMcJava']) {
-            return
-        }
-        sourceCompatibility = JavaVersion.VERSION_17
-        options.release.set(8)
-    }
+    // 移除 Jabel 相关配置，因为 use_modern_java_syntax = false
+    // if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
+    //     if (it.name in ['compileMcLauncherJava', 'compilePatchedMcJava']) {
+    //         return
+    //     }
+    //     sourceCompatibility = JavaVersion.VERSION_17
+    //     options.release.set(8)
+    // }
 }
 
 tasks.register('cleanroomAfterSync') {
     group 'cleanroom helpers'
-    dependsOn 'generateMixinJson'  // 移除 injectTags 依赖
+    dependsOn 'generateMixinJson'
 }
 
-// 完全禁用 injectTags 任务，因为 Tags 类已在源代码中定义
+// 完全禁用 injectTags 任务
 tasks.named('injectTags', InjectTagsTask).configure {
     onlyIf {
         return false
     }
 }
-
-// 完全移除 Javadoc 配置
-// if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
-//     tasks.withType(Javadoc).configureEach {
-//         options.source = '17'
-//     }
-// } else {
-//     tasks.withType(Javadoc).configureEach {
-//         options.source = '8'
-//     }
-// }
 
 tasks.named('prepareObfModsFolder').configure {
     finalizedBy 'prioritizeCoremods'
