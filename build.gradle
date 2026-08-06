@@ -68,7 +68,6 @@ repositories {
 }
 
 dependencies {
-    implementation rfg.deobf('curse.maven:had-enough-items-557549:4543375')
 
     if(project.hasProperty('realistic_item_drops') && (project.property('realistic_item_drops') as boolean)) {
         implementation rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
