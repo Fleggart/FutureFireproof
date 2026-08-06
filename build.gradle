@@ -110,12 +110,12 @@ dependencies {
     if (propertyBool('use_modern_java_syntax')) {
         annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
         annotationProcessor 'net.java.dev.jna:jna-platform:5.13.0'
-        compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
+        compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0' {
             transitive = false
         }
         patchedMinecraft 'me.eigenraven.java8unsupported:java-8-unsupported-shim:1.0.0'
         testAnnotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
-        testCompileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
+        testCompileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0' {
             transitive = false
         }
     }
@@ -124,13 +124,13 @@ dependencies {
     }
     if (propertyBool('use_mixins')) {
         String mixin = modUtils.enableMixins("zone.rong:mixinbooter:${propertyString('mixin_booter_version')}", propertyString('mixin_refmap'))
-        api mixin) {
+        api(mixin) {
             transitive = false
         }
         annotationProcessor 'org.ow2.asm:asm-debug-all:5.2'
         annotationProcessor 'com.google.guava:guava:24.1.1-jre'
         annotationProcessor 'com.google.code.gson:gson:2.8.6'
-        annotationProcessor mixin) {
+        annotationProcessor(mixin) {
             transitive = false
         }
     }
@@ -139,6 +139,10 @@ dependencies {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 }
+
+
+
+
 
 apply from: 'gradle/scripts/dependencies.gradle'
 
