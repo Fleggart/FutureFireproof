@@ -12,8 +12,6 @@ plugins {
     id 'org.jetbrains.gradle.plugin.idea-ext' version '1.1.7'
     id 'com.gtnewhorizons.retrofuturagradle' version '2.0.2'
     id 'org.jetbrains.changelog' version '2.2.0'
-    // 如需发布到 Modrinth 可保留下面这行，否则删除
-    // id 'com.modrinth.minotaur' version '2.+' apply false
 }
 
 apply from: 'gradle/scripts/helpers.gradle'
@@ -139,10 +137,6 @@ dependencies {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 }
-
-
-
-
 
 apply from: 'gradle/scripts/dependencies.gradle'
 
@@ -337,5 +331,6 @@ idea.project.settings {
     }
 }
 
-apply from: 'gradle/scripts/publishing.gradle'
+// Publishing 相关已移除
+// apply from: 'gradle/scripts/publishing.gradle'
 apply from: 'gradle/scripts/extra.gradle'
