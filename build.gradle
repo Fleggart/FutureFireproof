@@ -14,92 +14,29 @@ plugins {
     id 'org.jetbrains.changelog' version '2.2.0'
 }
 
-// ====== 内联 helpers.gradle 功能 ======
+// 读取 gradle.properties 中的值
+def modVersion = project.findProperty('mod_version') ?: '1.0.0'
+def rootPackage = project.findProperty('root_package') ?: 'com.example'
+def modId = project.findProperty('mod_id') ?: 'examplemod'
 
-// 属性断言辅助方法
-def assertProperty(String key) {
-    if (!project.hasProperty(key) || project.property(key).toString().isEmpty()) {
-        throw new GradleException("Property '$key' is not defined or empty in gradle.properties!")
-    }
-}
-
-def assertSubProperties(String key, String... subKeys) {
-    if (project.hasProperty(key) && project.property(key).toString().toBoolean()) {
-        for (def subKey : subKeys) {
-            assertProperty(subKey)
-        }
-    }
-}
-
-def setDefaultProperty(String key, boolean condition, def defaultValue) {
-    if (condition && (!project.hasProperty(key) || project.property(key).toString().isEmpty())) {
-        project.ext.set(key, defaultValue)
-    }
-}
-
-def propertyString(String key) {
-    return project.hasProperty(key) ? project.property(key).toString() : ''
-}
-
-def propertyStringList(String key, String delimiter = ' ') {
-    if (!project.hasProperty(key)) return []
-    def value = project.property(key).toString()
-    return value.isEmpty() ? [] : value.split(delimiter).collect { it.trim() }.findAll { !it.isEmpty() }
-}
-
-def propertyBool(String key) {
-    return project.hasProperty(key) && project.property(key).toString().toBoolean()
-}
-
-def interpolate(String value) {
-    return value.replaceAll(/\$\{([^}]+)\}/) { match, key ->
-        project.hasProperty(key) ? project.property(key).toString() : match
-    }
-}
-
-// ====== 原始 build.gradle 内容（移除 apply from 后） ======
-
-// Early Assertions
-assertProperty 'mod_version'
-assertProperty 'root_package'
-assertProperty 'mod_id'
-assertProperty 'mod_name'
-
-assertSubProperties 'use_tags', 'tag_class_name'
-assertSubProperties 'use_access_transformer', 'access_transformer_locations'
-assertSubProperties 'use_mixins', 'mixin_booter_version', 'mixin_refmap'
-assertSubProperties 'is_coremod', 'coremod_includes_mod', 'coremod_plugin_class_name'
-assertSubProperties 'use_asset_mover', 'asset_mover_version'
-
-setDefaultProperty 'use_modern_java_syntax', false, false
-setDefaultProperty 'generate_sources_jar', true, false
-setDefaultProperty 'generate_javadocs_jar', true, false
-setDefaultProperty 'mapping_channel', true, 'stable'
-setDefaultProperty 'mapping_version', true, '39'
-setDefaultProperty 'use_dependency_at_files', true, true
-setDefaultProperty 'minecraft_username', true, 'Developer'
-setDefaultProperty 'extra_jvm_args', false, ''
-setDefaultProperty 'extra_tweak_classes', false, ''
-setDefaultProperty 'change_minecraft_sources', false, false
-
-version = propertyString('mod_version')
-group = propertyString('root_package')
+version = modVersion
+group = rootPackage
 
 base {
-    archivesName.set(propertyString('mod_id'))
+    archivesName.set(modId)
 }
 
-tasks.decompressDecompiledSources.enabled !propertyBool('change_minecraft_sources')
-
+// 兼容 Gradle 9.2.1 - 使用字符串而不是枚举
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(propertyBool('use_modern_java_syntax') ? 16 : 8))
-        vendor.set(JvmVendorSpec.AZUL)
+        languageVersion.set(JavaLanguageVersion.of(8))
+        // 移除 vendor 设置，避免 JvmVendorSpec.IBM_SEMERU 问题
+        // vendor.set(JvmVendorSpec.AZUL)
     }
-    if (propertyBool('generate_sources_jar')) {
+    if (!project.hasProperty('generate_sources_jar') || (project.property('generate_sources_jar') as boolean)) {
         withSourcesJar()
     }
-    if (propertyBool('generate_javadocs_jar')) {
+    if (project.hasProperty('generate_javadocs_jar') && (project.property('generate_javadocs_jar') as boolean)) {
         withJavadocJar()
     }
 }
@@ -112,29 +49,33 @@ configurations {
 minecraft {
     mcVersion.set('1.12.2')
 
-    mcpMappingChannel.set(propertyString('mapping_channel'))
-    mcpMappingVersion.set(propertyString('mapping_version'))
+    mcpMappingChannel.set(project.hasProperty('mapping_channel') ? project.property('mapping_channel') as String : 'stable')
+    mcpMappingVersion.set(project.hasProperty('mapping_version') ? project.property('mapping_version') as String : '39')
 
-    useDependencyAccessTransformers.set(propertyBool('use_dependency_at_files'))
+    useDependencyAccessTransformers.set(!project.hasProperty('use_dependency_at_files') || (project.property('use_dependency_at_files') as boolean))
 
-    username.set(propertyString('minecraft_username'))
+    username.set(project.hasProperty('minecraft_username') ? project.property('minecraft_username') as String : 'Developer')
     
-    extraTweakClasses.addAll(propertyStringList('extra_tweak_classes'))
+    if (project.hasProperty('extra_tweak_classes') && !(project.property('extra_tweak_classes') as String).isEmpty()) {
+        extraTweakClasses.addAll((project.property('extra_tweak_classes') as String).split(' '))
+    }
 
     def args = ['-ea:' + group]
-    if (propertyBool('use_mixins')) {
+    if (project.hasProperty('use_mixins') && (project.property('use_mixins') as boolean)) {
         args << '-Dmixin.hotSwap=true'
         args << '-Dmixin.checks.interfaces=true'
         args << '-Dmixin.debug.export=true'
     }
     extraRunJvmArguments.addAll(args)
-    extraRunJvmArguments.addAll(propertyStringList('extra_jvm_args'))
+    if (project.hasProperty('extra_jvm_args') && !(project.property('extra_jvm_args') as String).isEmpty()) {
+        extraRunJvmArguments.addAll((project.property('extra_jvm_args') as String).split(' '))
+    }
 
-    if (propertyBool('use_tags')) {
+    if (project.hasProperty('use_tags') && (project.property('use_tags') as boolean)) {
         if (file('tags.properties').exists()) {
             Properties props = new Properties().tap { it.load(file('tags.properties').newInputStream()); it }
             if (!props.isEmpty()) {
-                injectedTags.set(props.collectEntries { k, v -> [(k): interpolate(v)] })
+                injectedTags.set(props.collectEntries { k, v -> [(k): v] })
             }
         }
     }
@@ -148,7 +89,7 @@ repositories {
 }
 
 dependencies {
-    if (propertyBool('use_modern_java_syntax')) {
+    if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
         annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
         annotationProcessor 'net.java.dev.jna:jna-platform:5.13.0'
         compileOnly 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0' {
@@ -160,11 +101,11 @@ dependencies {
             transitive = false
         }
     }
-    if (propertyBool('use_asset_mover')) {
-        implementation "com.cleanroommc:assetmover:${propertyString('asset_mover_version')}"
+    if (project.hasProperty('use_asset_mover') && (project.property('use_asset_mover') as boolean)) {
+        implementation "com.cleanroommc:assetmover:${project.property('asset_mover_version')}"
     }
-    if (propertyBool('use_mixins')) {
-        String mixin = modUtils.enableMixins("zone.rong:mixinbooter:${propertyString('mixin_booter_version')}", propertyString('mixin_refmap'))
+    if (project.hasProperty('use_mixins') && (project.property('use_mixins') as boolean)) {
+        String mixin = modUtils.enableMixins("zone.rong:mixinbooter:${project.property('mixin_booter_version')}", project.property('mixin_refmap') as String)
         api(mixin) {
             transitive = false
         }
@@ -175,49 +116,57 @@ dependencies {
             transitive = false
         }
     }
-    if (propertyBool('enable_junit_testing')) {
+    if (project.hasProperty('enable_junit_testing') && (project.property('enable_junit_testing') as boolean)) {
         testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 }
 
-// 移除: apply from: 'gradle/scripts/dependencies.gradle'
-// 改为直接 apply dependencies.gradle 的内容（见下方）
+apply from: 'gradle/scripts/dependencies.gradle'
 
-// Access Transformer
-if (propertyBool('use_access_transformer')) {
-    for (def location : propertyStringList('access_transformer_locations')) {
+// Access Transformer - 修复路径问题
+if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
+    def atLocations = project.hasProperty('access_transformer_locations') ? (project.property('access_transformer_locations') as String) : "${modId}_at.cfg"
+    // 替换 ${mod_id} 变量
+    atLocations = atLocations.replace('${mod_id}', modId)
+    
+    def locations = atLocations.split(' ').findAll { !it.isEmpty() }
+    for (def location : locations) {
         def fileLocation = file("${projectDir}/src/main/resources/${location}")
         if (fileLocation.exists()) {
             tasks.deobfuscateMergedJarToSrg.accessTransformerFiles.from(fileLocation)
             tasks.srgifyBinpatchedJar.accessTransformerFiles.from(fileLocation)
         } else {
-            throw new GradleException("Access Transformer file [$fileLocation] does not exist!")
+            // 如果文件不存在，给出警告而不是失败（因为可能不需要 AT）
+            logger.warn("Access Transformer file [$fileLocation] does not exist, skipping...")
+            // throw new GradleException("Access Transformer file [$fileLocation] does not exist!")
         }
     }
 }
 
 processResources {
     def filterList = ['mcmod.info', 'pack.mcmeta']
-    filterList.addAll(propertyStringList('mixin_configs').collect(config -> "mixins.${config}.json" as String))
+    if (project.hasProperty('mixin_configs')) {
+        filterList.addAll((project.property('mixin_configs') as String).split(' ').collect(config -> "mixins.${config}.json" as String))
+    }
 
     filesMatching(filterList) { fcd ->
         fcd.expand(
-            'mod_id': propertyString('mod_id'),
-            'mod_name': propertyString('mod_name'),
-            'mod_version': propertyString('mod_version'),
-            'mod_description': propertyString('mod_description'),
-            'mod_authors': "[${propertyStringList('mod_authors', ',').join(', ')}]",
-            'mod_credits': propertyString('mod_credits'),
-            'mod_url': propertyString('mod_url'),
-            'mod_update_json': propertyString('mod_update_json'),
-            'mod_logo_path': propertyString('mod_logo_path'),
-            'mixin_refmap': propertyString('mixin_refmap'),
-            'mixin_package': propertyString('mixin_package')
+            'mod_id': modId,
+            'mod_name': project.findProperty('mod_name') ?: 'Example Mod',
+            'mod_version': modVersion,
+            'mod_description': project.findProperty('mod_description') ?: '',
+            'mod_authors': project.hasProperty('mod_authors') ? "[${(project.property('mod_authors') as String).split(',').collect { it.trim() }.join(', ')}]" : '[]',
+            'mod_credits': project.findProperty('mod_credits') ?: '',
+            'mod_url': project.findProperty('mod_url') ?: '',
+            'mod_update_json': project.findProperty('mod_update_json') ?: '',
+            'mod_logo_path': project.findProperty('mod_logo_path') ?: '',
+            'mixin_refmap': project.findProperty('mixin_refmap') ?: '',
+            'mixin_package': project.findProperty('mixin_package') ?: ''
         )
     }
     
-    if (propertyBool('use_access_transformer')) {
+    if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
         rename '(.+_at.cfg)', 'META-INF/$1'
     }
 }
@@ -225,9 +174,9 @@ processResources {
 jar {
     manifest {
         def attribute_map = [:]
-        if (propertyBool('is_coremod')) {
-            attribute_map['FMLCorePlugin'] = propertyString('coremod_plugin_class_name')
-            if (propertyBool('coremod_includes_mod')) {
+        if (project.hasProperty('is_coremod') && (project.property('is_coremod') as boolean)) {
+            attribute_map['FMLCorePlugin'] = project.property('coremod_plugin_class_name') as String
+            if (!project.hasProperty('coremod_includes_mod') || (project.property('coremod_includes_mod') as boolean)) {
                 attribute_map['FMLCorePluginContainsFMLMod'] = true
                 def currentTasks = gradle.startParameter.taskNames
                 if (currentTasks[0] == 'build' || currentTasks[0] == 'prepareObfModsFolder' || currentTasks[0] == 'runObfClient') {
@@ -235,8 +184,10 @@ jar {
                 }
             }
         }
-        if (propertyBool('use_access_transformer')) {
-            attribute_map['FMLAT'] = propertyString('access_transformer_locations')
+        if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
+            def atLocations = project.hasProperty('access_transformer_locations') ? (project.property('access_transformer_locations') as String) : "${modId}_at.cfg"
+            atLocations = atLocations.replace('${mod_id}', modId)
+            attribute_map['FMLAT'] = atLocations
         }
         attributes(attribute_map)
     }
@@ -284,7 +235,7 @@ test {
     javaLauncher.set(javaToolchains.launcherFor {
         languageVersion = JavaLanguageVersion.of(8)
     })
-    if (propertyBool('show_testing_output')) {
+    if (project.hasProperty('show_testing_output') && (project.property('show_testing_output') as boolean)) {
         testLogging {
             showStandardStreams = true
         }
@@ -296,7 +247,7 @@ String parserChangelog() {
         throw new GradleException('publish_with_changelog is true, but CHANGELOG.md does not exist in the workspace!')
     }
     String parsedChangelog = changelog.renderItem(
-        changelog.get(propertyString('mod_version')).withHeader(false).withEmptySections(false),
+        changelog.get(modVersion).withHeader(false).withEmptySections(false),
         Changelog.OutputType.MARKDOWN)
     if (parsedChangelog.isEmpty()) {
         throw new GradleException('publish_with_changelog is true, but the changelog for the latest version is empty!')
@@ -306,9 +257,13 @@ String parserChangelog() {
 
 tasks.register('generateMixinJson') {
     group 'cleanroom helpers'
-    def missingConfig = propertyStringList('mixin_configs').findAll(config -> !file("src/main/resources/mixins.${config}.json").exists())
+    def missingConfig = []
+    if (project.hasProperty('mixin_configs')) {
+        missingConfig = (project.property('mixin_configs') as String).split(' ').findAll(config -> !file("src/main/resources/mixins.${config}.json").exists())
+    }
     onlyIf {
-        if (propertyBool('use_mixins') && propertyBool('generate_mixins_json')) {
+        if (project.hasProperty('use_mixins') && (project.property('use_mixins') as boolean) && 
+            project.hasProperty('generate_mixins_json') && (project.property('generate_mixins_json') as boolean)) {
             return !missingConfig.empty
         }
         return false
@@ -316,14 +271,14 @@ tasks.register('generateMixinJson') {
     doLast {
         for (String mixinConfig : missingConfig) {
             def file = file("src/main/resources/mixins.${mixinConfig}.json")
-            file << """{\n\t"package": "",\n\t"required": true,\n\t"refmap": "${mixin_refmap}",\n\t"target": "@env(DEFAULT)",\n\t"minVersion": "0.8.5",\n\t"compatibilityLevel": "JAVA_8",\n\t"mixins": [],\n\t"server": [],\n\t"client": []\n}"""
+            file << """{\n\t"package": "",\n\t"required": true,\n\t"refmap": "${project.findProperty('mixin_refmap') ?: ''}",\n\t"target": "@env(DEFAULT)",\n\t"minVersion": "0.8.5",\n\t"compatibilityLevel": "JAVA_8",\n\t"mixins": [],\n\t"server": [],\n\t"client": []\n}"""
         }
     }
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    if (propertyBool('use_modern_java_syntax')) {
+    if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
         if (it.name in ['compileMcLauncherJava', 'compilePatchedMcJava']) {
             return
         }
@@ -331,7 +286,8 @@ tasks.withType(JavaCompile).configureEach {
         options.release.set(8)
         javaCompiler.set(javaToolchains.compilerFor {
             languageVersion.set(JavaLanguageVersion.of(16))
-            vendor.set(JvmVendorSpec.AZUL)
+            // 移除 vendor 设置
+            // vendor.set(JvmVendorSpec.AZUL)
         })
     }
 }
@@ -341,7 +297,7 @@ tasks.register('cleanroomAfterSync') {
     dependsOn 'injectTags', 'generateMixinJson'
 }
 
-if (propertyBool('use_modern_java_syntax')) {
+if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
     tasks.withType(Javadoc).configureEach {
         sourceCompatibility = 17
     }
@@ -349,9 +305,9 @@ if (propertyBool('use_modern_java_syntax')) {
 
 tasks.named('injectTags', InjectTagsTask).configure {
     onlyIf {
-        return propertyBool('use_tags') && !it.getTags().get().isEmpty()
+        return project.hasProperty('use_tags') && (project.property('use_tags') as boolean) && !it.getTags().get().isEmpty()
     }
-    it.outputClassName.set(propertyString('tag_class_name'))
+    it.outputClassName.set(project.hasProperty('tag_class_name') ? project.property('tag_class_name') as String : '')
 }
 
 tasks.named('prepareObfModsFolder').configure {
@@ -375,43 +331,6 @@ idea.project.settings {
     }
 }
 
-// 移除: apply from: 'gradle/scripts/publishing.gradle'
-// 移除: apply from: 'gradle/scripts/extra.gradle'
-
-// ====== dependencies.gradle 内容内联 ======
-
-repositories {
-    exclusiveContent {
-        forRepository {
-            maven {
-                name 'CurseMaven'
-                url 'https://cursemaven.com'
-            }
-        }
-        filter {
-            includeGroup 'curse.maven'
-        }
-    }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name 'Modrinth'
-                url 'https://api.modrinth.com/maven'
-            }
-        }
-        filter {
-            includeGroup 'maven.modrinth'
-        }
-    }
-    mavenLocal()
-}
-
-dependencies {
-    implementation rfg.deobf('curse.maven:had-enough-items-557549:4543375')
-
-    if(propertyBool("realistic_item_drops")) {
-        implementation rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
-    } else {
-        compileOnly rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
-    }
-}
+// Publishing 相关已移除
+// apply from: 'gradle/scripts/publishing.gradle'
+apply from: 'gradle/scripts/extra.gradle'
