@@ -23,9 +23,6 @@ base {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-    
     if (!project.hasProperty('generate_sources_jar') || (project.property('generate_sources_jar') as boolean)) {
         withSourcesJar()
     }
@@ -196,11 +193,6 @@ jar {
         attributes(attribute_map)
     }
     from(provider{ configurations.embed.collect { it.isDirectory() ? it : zipTree(it) } })
-}
-
-compileTestJava {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 test {
