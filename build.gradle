@@ -30,7 +30,6 @@ base {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(8))
-        // 移除 vendor 设置
     }
     if (!project.hasProperty('generate_sources_jar') || (project.property('generate_sources_jar') as boolean)) {
         withSourcesJar()
@@ -85,11 +84,43 @@ repositories {
         name 'CleanroomMC Maven'
         url 'https://maven.cleanroommc.com'
     }
+    // 从 dependencies.gradle 中移入的 repositories
+    exclusiveContent {
+        forRepository {
+            maven {
+                name 'CurseMaven'
+                url 'https://cursemaven.com'
+            }
+        }
+        filter {
+            includeGroup 'curse.maven'
+        }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name 'Modrinth'
+                url 'https://api.modrinth.com/maven'
+            }
+        }
+        filter {
+            includeGroup 'maven.modrinth'
+        }
+    }
+    mavenLocal()
 }
 
 dependencies {
+    // 从 dependencies.gradle 中移入的依赖
+    implementation rfg.deobf('curse.maven:had-enough-items-557549:4543375')
+
+    if(project.hasProperty('realistic_item_drops') && (project.property('realistic_item_drops') as boolean)) {
+        implementation rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
+    } else {
+        compileOnly rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
+    }
+
     if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
-        // 修复：使用字符串格式的依赖声明
         annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
         annotationProcessor 'net.java.dev.jna:jna-platform:5.13.0'
         compileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
@@ -122,7 +153,7 @@ dependencies {
     }
 }
 
-apply from: 'gradle/scripts/dependencies.gradle'
+// 移除: apply from: 'gradle/scripts/dependencies.gradle'
 
 // Access Transformer
 if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
@@ -325,3 +356,6 @@ idea.project.settings {
         afterSync 'cleanroomAfterSync'
     }
 }
+
+// 移除: apply from: 'gradle/scripts/publishing.gradle'
+// 移除: apply from: 'gradle/scripts/extra.gradle'
