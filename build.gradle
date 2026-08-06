@@ -1,14 +1,8 @@
-/**
- * It is advised that you do not edit anything in the build.gradle; unless you are sure of what you are doing
- */
 plugins {
     id 'java'
-    id 'java-library'
-    id 'maven-publish'
     id 'com.gtnewhorizons.retrofuturagradle' version '2.0.2'
 }
 
-// 读取 gradle.properties 中的值
 def modVersion = project.findProperty('mod_version') ?: '1.0.0'
 def rootPackage = project.findProperty('root_package') ?: 'com.example'
 def modId = project.findProperty('mod_id') ?: 'examplemod'
@@ -18,17 +12,6 @@ group = rootPackage
 
 base {
     archivesName.set(modId)
-}
-
-java {
-    if (!project.hasProperty('generate_sources_jar') || (project.property('generate_sources_jar') as boolean)) {
-        withSourcesJar()
-    }
-}
-
-configurations {
-    embed
-    implementation.extendsFrom(embed)
 }
 
 minecraft {
@@ -42,57 +25,12 @@ repositories {
         name 'CleanroomMC Maven'
         url 'https://maven.cleanroommc.com'
     }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name 'CurseMaven'
-                url 'https://cursemaven.com'
-            }
-        }
-        filter {
-            includeGroup 'curse.maven'
-        }
-    }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name 'Modrinth'
-                url 'https://api.modrinth.com/maven'
-            }
-        }
-        filter {
-            includeGroup 'maven.modrinth'
-        }
-    }
     mavenLocal()
 }
 
 dependencies {
-
-    if (project.hasProperty('use_asset_mover') && (project.property('use_asset_mover') as boolean)) {
-        implementation "com.cleanroommc:assetmover:${project.property('asset_mover_version')}"
-    }
-    if (project.hasProperty('enable_junit_testing') && (project.property('enable_junit_testing') as boolean)) {
-        testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    }
-}
-
-// Access Transformer
-if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
-    def atLocations = project.hasProperty('access_transformer_locations') ? (project.property('access_transformer_locations') as String) : "${modId}_at.cfg"
-    atLocations = atLocations.replace('${mod_id}', modId)
-    
-    def locations = atLocations.split(' ').findAll { !it.isEmpty() }
-    for (def location : locations) {
-        def fileLocation = file("${projectDir}/src/main/resources/${location}")
-        if (fileLocation.exists()) {
-            tasks.deobfuscateMergedJarToSrg.accessTransformerFiles.from(fileLocation)
-            tasks.srgifyBinpatchedJar.accessTransformerFiles.from(fileLocation)
-        } else {
-            logger.warn("Access Transformer file [$fileLocation] does not exist, skipping...")
-        }
-    }
+    // 如果什么都不需要，这里可以是空的
+    // 或者只保留 Forge 依赖（由 RetrofutureGradle 自动处理）
 }
 
 processResources {
@@ -111,49 +49,10 @@ processResources {
             'mod_logo_path': project.findProperty('mod_logo_path') ?: ''
         )
     }
-    
-    if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
-        rename '(.+_at.cfg)', 'META-INF/$1'
-    }
 }
 
 jar {
     manifest {
-        def attribute_map = [:]
-        if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
-            def atLocations = project.hasProperty('access_transformer_locations') ? (project.property('access_transformer_locations') as String) : "${modId}_at.cfg"
-            atLocations = atLocations.replace('${mod_id}', modId)
-            attribute_map['FMLAT'] = atLocations
-        }
-        attributes(attribute_map)
-    }
-    from(provider{ configurations.embed.collect { it.isDirectory() ? it : zipTree(it) } })
-}
-
-test {
-    useJUnitPlatform()
-    if (project.hasProperty('show_testing_output') && (project.property('show_testing_output') as boolean)) {
-        testLogging {
-            showStandardStreams = true
-        }
-    }
-}
-
-tasks.register('cleanroomAfterSync') {
-    group 'cleanroom helpers'
-}
-
-tasks.named('prepareObfModsFolder').configure {
-    finalizedBy 'prioritizeCoremods'
-}
-
-tasks.register('prioritizeCoremods') {
-    dependsOn 'prepareObfModsFolder'
-    doLast {
-        fileTree('run/obfuscated').forEach {
-            if (it.isFile() && it.name =~ '(mixinbooter|configanytime)(-)([0-9])+\\.+([0-9])+(.jar)') {
-                it.renameTo(new File(it.parentFile, "!${it.name}"))
-            }
-        }
+        attributes([:])
     }
 }
