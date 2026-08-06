@@ -14,7 +14,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 
-@Mod.EventBusSubscriber(modid = FutureFireproof.MOD_ID)
+@Mod.EventBusSubscriber(modid = "futurefireproof")
 public class RegistrarFF {
     public final static Enchantment ENCHANTMENT_FIREPROOF = new EnchantmentFireproof();
     public static boolean isRealDropsLoaded = Loader.isModLoaded("realdrops");
@@ -31,7 +31,7 @@ public class RegistrarFF {
             Class<? extends EntityItem> entityClass = EntityFireproofItemLootHandler.getEntityFireproofLootItemClass();
             if (entityClass != null) {
                 EntityRegistry.registerModEntity(
-                        new ResourceLocation(FutureFireproof.MOD_ID, "fireproof_item_loot"),
+                        new ResourceLocation("futurefireproof", "fireproof_item_loot"),
                         entityClass,
                         "fireproof_item_loot",
                         101,
@@ -44,7 +44,7 @@ public class RegistrarFF {
             }
         }
         EntityRegistry.registerModEntity(
-                new ResourceLocation(FutureFireproof.MOD_ID, "fireproof_item"),
+                new ResourceLocation("futurefireproof", "fireproof_item"),
                 EntityFireproofItem.class,
                 "fireproof_item",
                 100,
