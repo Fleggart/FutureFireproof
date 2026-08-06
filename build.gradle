@@ -2,16 +2,12 @@
  * It is advised that you do not edit anything in the build.gradle; unless you are sure of what you are doing
  */
 import com.gtnewhorizons.retrofuturagradle.mcp.InjectTagsTask
-import org.jetbrains.changelog.Changelog
-import org.jetbrains.gradle.ext.Gradle
 
 plugins {
     id 'java'
     id 'java-library'
     id 'maven-publish'
-    id 'org.jetbrains.gradle.plugin.idea-ext' version '1.1.7'
     id 'com.gtnewhorizons.retrofuturagradle' version '2.0.2'
-    id 'org.jetbrains.changelog' version '2.2.0'
 }
 
 // 读取 gradle.properties 中的值
@@ -114,20 +110,6 @@ dependencies {
         compileOnly rfg.deobf("curse.maven:realistic-item-drops-245620:2630384")
     }
 
-    // 完全移除 Jabel 相关依赖，因为 use_modern_java_syntax = false
-    // if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
-    //     annotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
-    //     annotationProcessor 'net.java.dev.jna:jna-platform:5.13.0'
-    //     compileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
-    //         transitive = false
-    //     }
-    //     patchedMinecraft 'me.eigenraven.java8unsupported:java-8-unsupported-shim:1.0.0'
-    //     testAnnotationProcessor 'com.github.bsideup.jabel:jabel-javac-plugin:1.0.0'
-    //     testCompileOnly('com.github.bsideup.jabel:jabel-javac-plugin:1.0.0') {
-    //         transitive = false
-    //     }
-    // }
-    
     if (project.hasProperty('use_asset_mover') && (project.property('use_asset_mover') as boolean)) {
         implementation "com.cleanroommc:assetmover:${project.property('asset_mover_version')}"
     }
@@ -216,38 +198,6 @@ jar {
     from(provider{ configurations.embed.collect { it.isDirectory() ? it : zipTree(it) } })
 }
 
-idea {
-    module {
-        inheritOutputDirs = true
-    }
-    project {
-        settings {
-            runConfigurations {
-                "1. Run Client"(Gradle) {
-                    taskNames = ["runClient"]
-                }
-                "2. Run Server"(Gradle) {
-                    taskNames = ["runServer"]
-                }
-                "3. Run Obfuscated Client"(Gradle) {
-                    taskNames = ["runObfClient"]
-                }
-                "4. Run Obfuscated Server"(Gradle) {
-                    taskNames = ["runObfServer"]
-                }
-            }
-            compiler.javac {
-                afterEvaluate {
-                    javacAdditionalOptions = "-encoding utf8"
-                    moduleJavacAdditionalOptions = [
-                        (project.name + ".main"): tasks.compileJava.options.compilerArgs.collect { '"' + it + '"' }.join(' ')
-                    ]
-                }
-            }
-        }
-    }
-}
-
 compileTestJava {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -260,19 +210,6 @@ test {
             showStandardStreams = true
         }
     }
-}
-
-String parserChangelog() {
-    if (!file('CHANGELOG.md').exists()) {
-        throw new GradleException('publish_with_changelog is true, but CHANGELOG.md does not exist in the workspace!')
-    }
-    String parsedChangelog = changelog.renderItem(
-        changelog.get(modVersion).withHeader(false).withEmptySections(false),
-        Changelog.OutputType.MARKDOWN)
-    if (parsedChangelog.isEmpty()) {
-        throw new GradleException('publish_with_changelog is true, but the changelog for the latest version is empty!')
-    }
-    return parsedChangelog
 }
 
 tasks.register('generateMixinJson') {
@@ -298,14 +235,6 @@ tasks.register('generateMixinJson') {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    // 移除 Jabel 相关配置，因为 use_modern_java_syntax = false
-    // if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
-    //     if (it.name in ['compileMcLauncherJava', 'compilePatchedMcJava']) {
-    //         return
-    //     }
-    //     sourceCompatibility = JavaVersion.VERSION_17
-    //     options.release.set(8)
-    // }
 }
 
 tasks.register('cleanroomAfterSync') {
@@ -332,11 +261,5 @@ tasks.register('prioritizeCoremods') {
                 it.renameTo(new File(it.parentFile, "!${it.name}"))
             }
         }
-    }
-}
-
-idea.project.settings {
-    taskTriggers {
-        afterSync 'cleanroomAfterSync'
     }
 }
