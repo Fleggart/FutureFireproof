@@ -1,13 +1,12 @@
 package com.invadermonky.futurefireproof.config;
 
-import com.invadermonky.futurefireproof.FutureFireproof;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-@Config(modid = FutureFireproof.MOD_ID)
+@Config(modid = "futurefireproof")
 public class ConfigHandlerFF {
     @Config.RequiresMcRestart
     @Config.Comment("Enables the Fireproof item enchant.")
@@ -42,12 +41,12 @@ public class ConfigHandlerFF {
             "  minecraft:stick:0=5")
     public static String[] fireproofItems = new String[]{};
 
-    @Mod.EventBusSubscriber(modid = FutureFireproof.MOD_ID)
+    @Mod.EventBusSubscriber(modid = "futurefireproof")
     public static class ConfigChangeListener {
         @SubscribeEvent
         public static void onConfigChange(ConfigChangedEvent.OnConfigChangedEvent event) {
-            if (event.getModID().equals(FutureFireproof.MOD_ID)) {
-                ConfigManager.sync(FutureFireproof.MOD_ID, Config.Type.INSTANCE);
+            if (event.getModID().equals("futurefireproof")) {
+                ConfigManager.sync("futurefireproof", Config.Type.INSTANCE);
                 ModTags.syncConfig();
             }
         }
