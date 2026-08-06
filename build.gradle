@@ -34,9 +34,10 @@ java {
     if (!project.hasProperty('generate_sources_jar') || (project.property('generate_sources_jar') as boolean)) {
         withSourcesJar()
     }
-    if (project.hasProperty('generate_javadocs_jar') && (project.property('generate_javadocs_jar') as boolean)) {
-        withJavadocJar()
-    }
+    // 完全移除 Javadoc Jar
+    // if (project.hasProperty('generate_javadocs_jar') && (project.property('generate_javadocs_jar') as boolean)) {
+    //     withJavadocJar()
+    // }
 }
 
 configurations {
@@ -314,11 +315,7 @@ tasks.register('cleanroomAfterSync') {
     dependsOn 'injectTags', 'generateMixinJson'
 }
 
-if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
-    tasks.withType(Javadoc).configureEach {
-        sourceCompatibility = JavaVersion.VERSION_17
-    }
-}
+
 
 tasks.named('injectTags', InjectTagsTask).configure {
     onlyIf {
