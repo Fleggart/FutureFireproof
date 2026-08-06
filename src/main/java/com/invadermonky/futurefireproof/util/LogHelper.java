@@ -1,11 +1,10 @@
 package com.invadermonky.futurefireproof.util;
 
-import com.invadermonky.futurefireproof.FutureFireproof;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class LogHelper {
-    private static final Logger LOG = LogManager.getLogger(FutureFireproof.MOD_NAME);
+    private static final Logger LOG = LogManager.getLogger("Future Fireproof");
 
     public static void debug(Object obj) {
         LOG.debug(obj);
