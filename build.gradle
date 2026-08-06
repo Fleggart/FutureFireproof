@@ -34,9 +34,10 @@ configurations {
 }
 
 minecraft {
-    mcVersion = '1.12.2'
-    mcpMappingChannel = 'stable'
-    mcpMappingVersion = '39'
+    mcVersion.set('1.12.2')
+
+    mcpMappingChannel.set(project.hasProperty('mapping_channel') ? project.property('mapping_channel') as String : 'stable')
+    mcpMappingVersion.set(project.hasProperty('mapping_version') ? project.property('mapping_version') as String : '39')
 
     useDependencyAccessTransformers.set(!project.hasProperty('use_dependency_at_files') || (project.property('use_dependency_at_files') as boolean))
 
@@ -229,12 +230,7 @@ tasks.register('cleanroomAfterSync') {
     dependsOn 'generateMixinJson'
 }
 
-// 完全禁用 injectTags 任务
-tasks.named('injectTags', InjectTagsTask).configure {
-    onlyIf {
-        return false
-    }
-}
+// 移除 injectTags 配置
 
 tasks.named('prepareObfModsFolder').configure {
     finalizedBy 'prioritizeCoremods'
