@@ -47,10 +47,6 @@ minecraft {
         extraTweakClasses.addAll((project.property('extra_tweak_classes') as String).split(' '))
     }
 
-    if (project.hasProperty('extra_jvm_args') && !(project.property('extra_jvm_args') as String).isEmpty()) {
-        extraRunJvmArguments.addAll((project.property('extra_jvm_args') as String).split(' '))
-    }
-
     if (project.hasProperty('use_tags') && (project.property('use_tags') as boolean)) {
         if (file('tags.properties').exists()) {
             Properties props = new Properties().tap { it.load(file('tags.properties').newInputStream()); it }
