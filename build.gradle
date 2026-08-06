@@ -1,8 +1,6 @@
 /**
  * It is advised that you do not edit anything in the build.gradle; unless you are sure of what you are doing
  */
-import com.gtnewhorizons.retrofuturagradle.mcp.InjectTagsTask
-
 plugins {
     id 'java'
     id 'java-library'
@@ -99,18 +97,6 @@ dependencies {
     if (project.hasProperty('use_asset_mover') && (project.property('use_asset_mover') as boolean)) {
         implementation "com.cleanroommc:assetmover:${project.property('asset_mover_version')}"
     }
-    if (project.hasProperty('use_mixins') && (project.property('use_mixins') as boolean)) {
-        String mixin = modUtils.enableMixins("zone.rong:mixinbooter:${project.property('mixin_booter_version')}", project.property('mixin_refmap') as String)
-        api(mixin) {
-            transitive = false
-        }
-        annotationProcessor 'org.ow2.asm:asm-debug-all:5.2'
-        annotationProcessor 'com.google.guava:guava:24.1.1-jre'
-        annotationProcessor 'com.google.code.gson:gson:2.8.6'
-        annotationProcessor(mixin) {
-            transitive = false
-        }
-    }
     if (project.hasProperty('enable_junit_testing') && (project.property('enable_junit_testing') as boolean)) {
         testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -136,9 +122,6 @@ if (project.hasProperty('use_access_transformer') && (project.property('use_acce
 
 processResources {
     def filterList = ['mcmod.info', 'pack.mcmeta']
-    if (project.hasProperty('mixin_configs')) {
-        filterList.addAll((project.property('mixin_configs') as String).split(' ').collect(config -> "mixins.${config}.json" as String))
-    }
 
     filesMatching(filterList) { fcd ->
         fcd.expand(
@@ -150,9 +133,7 @@ processResources {
             'mod_credits': project.findProperty('mod_credits') ?: '',
             'mod_url': project.findProperty('mod_url') ?: '',
             'mod_update_json': project.findProperty('mod_update_json') ?: '',
-            'mod_logo_path': project.findProperty('mod_logo_path') ?: '',
-            'mixin_refmap': project.findProperty('mixin_refmap') ?: '',
-            'mixin_package': project.findProperty('mixin_package') ?: ''
+            'mod_logo_path': project.findProperty('mod_logo_path') ?: ''
         )
     }
     
@@ -164,16 +145,6 @@ processResources {
 jar {
     manifest {
         def attribute_map = [:]
-        if (project.hasProperty('is_coremod') && (project.property('is_coremod') as boolean)) {
-            attribute_map['FMLCorePlugin'] = project.property('coremod_plugin_class_name') as String
-            if (!project.hasProperty('coremod_includes_mod') || (project.property('coremod_includes_mod') as boolean)) {
-                attribute_map['FMLCorePluginContainsFMLMod'] = true
-                def currentTasks = gradle.startParameter.taskNames
-                if (currentTasks[0] == 'build' || currentTasks[0] == 'prepareObfModsFolder' || currentTasks[0] == 'runObfClient') {
-                    attribute_map['ForceLoadAsMod'] = true
-                }
-            }
-        }
         if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
             def atLocations = project.hasProperty('access_transformer_locations') ? (project.property('access_transformer_locations') as String) : "${modId}_at.cfg"
             atLocations = atLocations.replace('${mod_id}', modId)
@@ -193,33 +164,9 @@ test {
     }
 }
 
-tasks.register('generateMixinJson') {
-    group 'cleanroom helpers'
-    def missingConfig = []
-    if (project.hasProperty('mixin_configs')) {
-        missingConfig = (project.property('mixin_configs') as String).split(' ').findAll(config -> !file("src/main/resources/mixins.${config}.json").exists())
-    }
-    onlyIf {
-        if (project.hasProperty('use_mixins') && (project.property('use_mixins') as boolean) && 
-            project.hasProperty('generate_mixins_json') && (project.property('generate_mixins_json') as boolean)) {
-            return !missingConfig.empty
-        }
-        return false
-    }
-    doLast {
-        for (String mixinConfig : missingConfig) {
-            def file = file("src/main/resources/mixins.${mixinConfig}.json")
-            file << """{\n\t"package": "",\n\t"required": true,\n\t"refmap": "${project.findProperty('mixin_refmap') ?: ''}",\n\t"target": "@env(DEFAULT)",\n\t"minVersion": "0.8.5",\n\t"compatibilityLevel": "JAVA_8",\n\t"mixins": [],\n\t"server": [],\n\t"client": []\n}"""
-        }
-    }
-}
-
 tasks.register('cleanroomAfterSync') {
     group 'cleanroom helpers'
-    dependsOn 'generateMixinJson'
 }
-
-// 移除 injectTags 配置
 
 tasks.named('prepareObfModsFolder').configure {
     finalizedBy 'prioritizeCoremods'
