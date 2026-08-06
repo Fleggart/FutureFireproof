@@ -41,9 +41,7 @@ minecraft {
 
     username.set(project.hasProperty('minecraft_username') ? project.property('minecraft_username') as String : 'Developer')
     
-    if (project.hasProperty('extra_tweak_classes') && !(project.property('extra_tweak_classes') as String).isEmpty()) {
-        extraTweakClasses.addAll((project.property('extra_tweak_classes') as String).split(' '))
-    }
+    
 
     
 }
