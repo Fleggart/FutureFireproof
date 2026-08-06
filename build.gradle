@@ -70,6 +70,7 @@ minecraft {
         extraRunJvmArguments.addAll((project.property('extra_jvm_args') as String).split(' '))
     }
 
+    // 禁用 tags 生成，因为 Tags 类已在源代码中定义
     if (project.hasProperty('use_tags') && (project.property('use_tags') as boolean)) {
         if (file('tags.properties').exists()) {
             Properties props = new Properties().tap { it.load(file('tags.properties').newInputStream()); it }
@@ -312,17 +313,26 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.register('cleanroomAfterSync') {
     group 'cleanroom helpers'
-    dependsOn 'injectTags', 'generateMixinJson'
+    dependsOn 'generateMixinJson'  // 移除 injectTags 依赖
 }
 
-
-
+// 完全禁用 injectTags 任务，因为 Tags 类已在源代码中定义
 tasks.named('injectTags', InjectTagsTask).configure {
     onlyIf {
-        return project.hasProperty('use_tags') && (project.property('use_tags') as boolean) && !it.getTags().get().isEmpty()
+        return false
     }
-    it.outputClassName.set(project.hasProperty('tag_class_name') ? project.property('tag_class_name') as String : '')
 }
+
+// 完全移除 Javadoc 配置
+// if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
+//     tasks.withType(Javadoc).configureEach {
+//         options.source = '17'
+//     }
+// } else {
+//     tasks.withType(Javadoc).configureEach {
+//         options.source = '8'
+//     }
+// }
 
 tasks.named('prepareObfModsFolder').configure {
     finalizedBy 'prioritizeCoremods'
