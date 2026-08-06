@@ -26,11 +26,11 @@ base {
     archivesName.set(modId)
 }
 
-// 兼容 Gradle 9.2.1
+// 移除 toolchain，直接使用 source/target compatibility
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
-    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    
     if (!project.hasProperty('generate_sources_jar') || (project.property('generate_sources_jar') as boolean)) {
         withSourcesJar()
     }
@@ -84,7 +84,6 @@ repositories {
         name 'CleanroomMC Maven'
         url 'https://maven.cleanroommc.com'
     }
-    // 从 dependencies.gradle 中移入的 repositories
     exclusiveContent {
         forRepository {
             maven {
@@ -111,7 +110,6 @@ repositories {
 }
 
 dependencies {
-    // 从 dependencies.gradle 中移入的依赖
     implementation rfg.deobf('curse.maven:had-enough-items-557549:4543375')
 
     if(project.hasProperty('realistic_item_drops') && (project.property('realistic_item_drops') as boolean)) {
@@ -152,8 +150,6 @@ dependencies {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 }
-
-// 移除: apply from: 'gradle/scripts/dependencies.gradle'
 
 // Access Transformer
 if (project.hasProperty('use_access_transformer') && (project.property('use_access_transformer') as boolean)) {
@@ -255,14 +251,12 @@ idea {
 }
 
 compileTestJava {
-    sourceCompatibility = targetCompatibility = 8
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 test {
     useJUnitPlatform()
-    javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(8)
-    })
     if (project.hasProperty('show_testing_output') && (project.property('show_testing_output') as boolean)) {
         testLogging {
             showStandardStreams = true
@@ -310,11 +304,8 @@ tasks.withType(JavaCompile).configureEach {
         if (it.name in ['compileMcLauncherJava', 'compilePatchedMcJava']) {
             return
         }
-        sourceCompatibility = 17
+        sourceCompatibility = JavaVersion.VERSION_17
         options.release.set(8)
-        javaCompiler.set(javaToolchains.compilerFor {
-            languageVersion.set(JavaLanguageVersion.of(16))
-        })
     }
 }
 
@@ -325,7 +316,7 @@ tasks.register('cleanroomAfterSync') {
 
 if (project.hasProperty('use_modern_java_syntax') && (project.property('use_modern_java_syntax') as boolean)) {
     tasks.withType(Javadoc).configureEach {
-        sourceCompatibility = 17
+        sourceCompatibility = JavaVersion.VERSION_17
     }
 }
 
@@ -356,6 +347,3 @@ idea.project.settings {
         afterSync 'cleanroomAfterSync'
     }
 }
-
-// 移除: apply from: 'gradle/scripts/publishing.gradle'
-// 移除: apply from: 'gradle/scripts/extra.gradle'
