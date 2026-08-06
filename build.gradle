@@ -45,14 +45,7 @@ minecraft {
         extraTweakClasses.addAll((project.property('extra_tweak_classes') as String).split(' '))
     }
 
-    if (project.hasProperty('use_tags') && (project.property('use_tags') as boolean)) {
-        if (file('tags.properties').exists()) {
-            Properties props = new Properties().tap { it.load(file('tags.properties').newInputStream()); it }
-            if (!props.isEmpty()) {
-                injectedTags.set(props.collectEntries { k, v -> [(k): v] })
-            }
-        }
-    }
+    
 }
 
 repositories {
