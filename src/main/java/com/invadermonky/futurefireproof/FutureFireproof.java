@@ -2,10 +2,11 @@ package com.invadermonky.futurefireproof;
 
 import com.invadermonky.futurefireproof.config.ModTags;
 import com.invadermonky.futurefireproof.registry.RegistrarFF;
-import com.invadermonky.futurefireproof.util.LogHelper;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Mod(
         modid = FutureFireproof.MOD_ID,
@@ -19,19 +20,9 @@ public class FutureFireproof {
     public static final String VERSION = "1.2.4";
     public static final String MC_VERSION = "[1.12.2]";
 
+    private static final Logger LOGGER = LogManager.getLogger(MOD_ID);
+
     @Mod.Instance(MOD_ID)
     public static FutureFireproof instance;
 
-    @Mod.EventHandler
-    public void preInit(FMLPreInitializationEvent event) {
-        LogHelper.info("Starting " + MOD_NAME);
-        RegistrarFF.registerEntities();
-        LogHelper.debug("Finished preInit phase.");
-    }
-
-    @Mod.EventHandler
-    public void postInit(FMLPostInitializationEvent event) {
-        ModTags.syncConfig();
-        LogHelper.debug("Finished postInit phase.");
-    }
 }
