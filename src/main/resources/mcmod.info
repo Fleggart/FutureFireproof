@@ -1,5 +1,5 @@
 [{
-	"modid": "${mod_id}",
+	"modid": "FutureFireproof",
 	"name": "${mod_name}",
 	"version": "${mod_version}",
 	"mcversion": "1.12.2",
